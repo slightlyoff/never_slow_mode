@@ -146,7 +146,7 @@ This table summarizes the provisional per-interaction limits; discussion of each
 
 #### Connections
 
-Documents are limited to *10 connections*.
+Documents are limited to *10 new connections* per interaction.
 
 This is not strictly a limit on the number of origins that may be consulted in the construction of a document, as HTTP/2 allows for [connection coalsecing](https://daniel.haxx.se/blog/2016/08/18/http2-connection-coalescing/).
 
@@ -224,15 +224,15 @@ Lastly, many frameworks and toolkits easily fit within the 50 KiB per-resource w
 
 #### Stylesheets
 
-CSS stylesheets are limited to *100 KiB* per-resource and a total per-interaction limit of *200 KiB* within a document.
+CSS stylesheets are limited to *100 KiB* per-resource and a total per-interaction limit of *200 KiB*.
 
 _Rationale_: In automated build tools, stylesheets can often grow to many hundreds of KB without teams noticing. The limits applied here are enough for nearly all reasonable layouts when using modern CSS features.
 
 #### Fonts
 
-Web Fonts are limited to *100 KiB* per-resource and a total per-interaction limit of *100 KiB* within a document.
+Web Fonts are limited to *100 KiB* per-resource and a total per-interaction limit of *100 KiB*.
 
-_Rationale_: Web Fonts are frequently used in places where they are simply not necessary, or are loaded in ways that destroy opportunities to display otherwise-ready content to users. In conjunction with eager loading, low size limits prevent fonts from blocking access to otherwise-usable content.
+_Rationale_: Web Fonts are often heavyweight. In conjunction with eager loading, low size limits prevent fonts from blocking access to otherwise-usable content.
 
 #### Images
 
