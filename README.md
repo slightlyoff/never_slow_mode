@@ -1,14 +1,18 @@
 # "Never-Slow Mode" (a.k.a. "Slightly-Fast Mode") Explained
 
-> Last Update: Feb 24th, 2019 <br>
+> Last Update: March 26th, 2019 <br>
 >
 > Alex Russell <code>&lt;slightlyoff@google.com&gt;</code><br>
+> Adam Argyle <code>&lt;argyle@google.com&gt;</code><br>
 
 ## What’s all this then?
 
-Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could providing UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed) or gate the availability of some features that developers may want access to (_note that these are hypotheticals, not concrete proposals_).
+Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could providing UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed).
+
 
 ![Potential NSM-opt-in UI](images/NSM_compliant_2x.png)
+
+Browsers could also gate the availability of some features that developers may want access to (_note that these are hypotheticals, not concrete proposals_).
 
 [Feature Policies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy) are a relatively new web platform feature that allow sites to disable certain web platform features at runtime. They help prevent inadvertant use of known-slow patterns and allow sites to control or disable use of certain powerful features. NSM is itself a Feature Policy that bundles together several existing Policies and adds a new approach to resource budgeting that the Feature Policy framework does not yet support.
 
@@ -35,7 +39,7 @@ NSM differs from other Feature Policies in several ways. First, limits are set o
 
 ## Getting started
 
-Like other Feature Policies, NSM is enabled by pages through an HTTP header. Unlike other policies, only one argument (`none`) is valid:
+Like other Feature Policies, NSM is enabled by pages through an HTTP header.
 
 ```
 Feature-Policy: allow-slow 'none'; geolocation 'none'
@@ -54,9 +58,9 @@ Report-To: { "group": "allow-slow-reports",
              "endpoints": [{ "url": "https://example.com/allow-slow-reports" } ] }
 ```
 
-While the same errors will be delivered to a [`ReportingObserver`](https://developers.google.com/web/updates/2018/07/reportingobserver), it's not recommended that sites rely on this mechanism as some data may be lost due to task pausing (see below).
+The same errors will be delivered to a [`ReportingObserver`](https://developers.google.com/web/updates/2018/07/reportingobserver).
 
-A variant of the mode is proposed for sites that do not want browsers to enforce conformance, but instead are attempting to collect violation logs to understand what's involved in becoming NSM-conformant. The following policy logs errors to the same endpoint but does not modify content:
+A variant of the mode is possible for sites that do not want browsers to enforce conformance, but instead are attempting to collect violation logs to understand what's involved in becoming NSM-conformant. The following policy logs errors to the same endpoint but does not modify content:
 
 ```
 Feature-Policy: report-only-allow-slow; report-to allow-slow-reports
@@ -246,9 +250,13 @@ _Rationale_: 1 MiB is large enough to encode a screenshot of nearly all above-th
 
 Main-thread script execution must be broken up in order for documents to remain responsive. Ideally, work is scheduled in chunks that are not longer than 8-10ms. Many systems today create single tasks that are many orders of magnitude larger than this, creating a situation in which content may be visible, but cannot be interacted with. This is sometimes referred to as the "dishonest pixel problem": the site appears to allow you to do something, but attempting to use it fails until long script tasks complete.
 
-To discourage dishonest pixels, NSM caps the length of tasks. As it isn't possible to safely interrupt JS tasks, *NSM _pauses_ all future work by pages that run invididual tasks longer than 200ms*.
+To discourage dishonest pixels, NSM caps the length of tasks. As it isn't possible to safely interrupt JS tasks, *NSM UI indicators will flag non-compliance and violation reports will be triggered when a main-thread JS task takes longer than 200ms*.
 
-As with other limits, interaction causes documents to become un-frozen, allowing work to continue.
+![Before](images/NSM_compliant_2x.png)
+
+Becomes:
+
+![Violation](images/NSM_violation_2x.png)
 
 > Note: the long-task limit is by far the most contentious limit. It has the most open questions associated with it, both in terms of predictability for developers across the fleet of user devices and a browser's ability to communicate meaningfully to users about violations. Expect changes to, or removal of, this limit!
 
@@ -361,7 +369,49 @@ We hope security professionals can guide us to adopt the correct policy.
 
 ## Open Questions
 
-###  Long-Task Limit Scaling and Application Approaches
+### `<iframe>` Origin Opt-Out
+
+It could be reasonable to allow the usual Feature Policy syntax for allowing specific sites to be opted-out of NSM in iframes, e.g. loading a page from `https://slow.example.com`:
+
+```
+Feature-Policy: allow-slow 'self' https://example.com https://other.com
+```
+
+```html
+<html>
+  <head><!-- page from https://slow.example.com --></head>
+  <body>
+    <!-- allowed by 'self' -->
+    <iframe src="./slow.html"></iframe>
+    <!-- allowed by origin policies -->
+    <iframe src="https://example.com/"></iframe>
+    <iframe src="https://other.com/deep/link.html"></iframe>
+
+    <!-- blocked unless iframe content send NSM opt-in header -->
+    <iframe src="https://blocked.example.com"></iframe>
+  </body>
+</html>
+```
+
+This policy _still applies limits to the top-level document_. It selectively allows them to be relaxed for sub-frames, however. We can imagine a UI indicator state that's "neutral" in these cases:
+
+![Silent treatment when opting top-document in but certain iframes out](images/NSM_silent_2x.png)
+
+Several things recommend this approach:
+
+  * Enables sites to adopt NSM incrementally
+  * Provides a way to isolate poorly behaving third parties
+  * Prevents NSM's syntax from being an "oddball" within the Feature Policy grammar
+
+This would open sevearl questions regarding iframe policy application, but in general, may be the right way forward.
+
+### Fully-described Layering
+
+This hardly needs saying given the authors of this proposal, but it's a clear aspiration to desribe all of the policies enforced by NSM in terms of well-layered APIs. In particular, the `allow-slow 'none'` policy should desugar well to a set of other Feature Policies.
+
+The goal of NSM isn't to create a brand new, stand-alone set of policies, but rather to wrap-up existing (or to-be-developed) policies into a binary opt-in. To the extent that NSM implements policies that FP doesn't provide yet, our goal is to re-introduce them to FP directly (although this does not block NSM progress).
+
+### Long-Task Limit Scaling and Application Approaches
 
 A long-task limit of 200ms may be difficult to build to reliably from the perspective of a fast developer device. May developers are unfamiliar with the performance [diversity](https://deviceatlas.com/blog/android-v-ios-market-share) of today's market where _most_ global device shipments of all computers are Android devices, all of which are slower than either competing iOS devices and laptops. 200ms of single-core-bound JS exec on a fast dekstop Intel chip may [equate to more than 2s of time on an entry-level Android device](https://browser.geekbench.com/v4/cpu/compare/12148003?baseline=12170855) or [a top-of-the-line smartphone](https://browser.geekbench.com/v4/cpu/compare/12170440?baseline=12148003).
 
@@ -441,6 +491,10 @@ Server-side solutions are also unlikely to be able to fully constrain third part
 
 Server-side tranformations are likely to help sites transitioning to NSM conformance, but like linters, are likely to be more valuable in conjunction with NSM and related external incentives than without.
 
+### Task Pasuing
+
+A previous iteration of this proposal sought to pause future tasks when long-task limits were breached. This creates risks of "breaking apps" for transient reasons (hot devices getting thermally throttled, external-app CPU contention, etc.). Moving to a UI-indicator-change model aligns NSM with TLS's experience without removing possible pausing violation intervention in non-browser contexts (e.g., crawlers, PWA install gates).
+
 ## References & Acknowledgements
 
 NSM is an attempt to package up the brilliant work of many other projects in the hopes to make them more accessible. The proposal would not be possible without [Ian Clelland](https://github.com/clelland), [Ojan Vafai](https://github.com/ojanvafai), and [Ilya Grigork](https://www.igvita.com/)'s work on [Feature Policies](https://developers.google.com/web/updates/2018/06/feature-policy) and [Interventions](https://github.com/WICG/interventions).
@@ -453,6 +507,6 @@ Thanks to [Andrew Betts](https://trib.tv/), [Andy Davies](https://andydavies.me/
 
 Thanks also to colleagues working in NBU and Chrome's Data-Saver projects whose feedback has directly changed the proposal, including: [Tal Oppenheimer](https://twitter.com/taloppenheimer), Ben Greenstein, Annie Sullivan, and [Kenji Baheux](https://github.com/KenjiBaheux).
 
-Folks working in web performance have had a huge impact on the thinking behind the proposed policies. In no particular order, thanks to: [Shubie Panicker](https://github.com/spanicker), [Tim Dresser](https://twitter.com/tdresser), [Jake Archibald](https://jakearchibald.com/), [Bryan McQuade](https://twitter.com/bryanmcquade), [Yoav Weiss](https://blog.yoav.ws/), [Houssein Djirdeh](https://houssein.me/), [Addy Osmani](https://addyosmani.com/), [Dion Almaer](https://medium.com/@dalmaer), and [Kirstofer Baxter](https://twitter.com/kristoferbaxter).
+Folks working in web performance have had a huge impact on the thinking behind the proposed policies. In no particular order, thanks to: [Shubie Panicker](https://github.com/spanicker), [Tim Dresser](https://twitter.com/tdresser), [Jake Archibald](https://jakearchibald.com/), [Bryan McQuade](https://twitter.com/bryanmcquade), [Yoav Weiss](https://blog.yoav.ws/), [Houssein Djirdeh](https://houssein.me/), [Addy Osmani](https://addyosmani.com/), [Dion Almaer](https://medium.com/@dalmaer), and [Kristofer Baxter](https://twitter.com/kristoferbaxter).
 
 Lastly, the example of [Malte Ubl](https://github.com/cramforce) and the [AMP team](https://github.com/orgs/ampproject/people) have helped underscore the need for development-time-applicable policies and linting, highliting the need for directness of action.
