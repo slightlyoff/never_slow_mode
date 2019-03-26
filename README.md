@@ -8,6 +8,8 @@
 
 Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could providing UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed) or gate the availability of some features that developers may want access to (_note that these are hypotheticals, not concrete proposals_).
 
+![Potential NSM-opt-in UI](images/NSM_compliant_2x.png)
+
 [Feature Policies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Feature-Policy) are a relatively new web platform feature that allow sites to disable certain web platform features at runtime. They help prevent inadvertant use of known-slow patterns and allow sites to control or disable use of certain powerful features. NSM is itself a Feature Policy that bundles together several existing Policies and adds a new approach to resource budgeting that the Feature Policy framework does not yet support.
 
 NSM is designed to keep pages responsive, so limits apply only to a document's main thread. Limits do not apply to [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API), [Service Workers](https://developers.google.com/web/fundamentals/primers/service-workers/), and [Worklets](https://developer.mozilla.org/en-US/docs/Web/API/Worklet). NSM tries to budget only what is scarce, so resources loaded from Service Worker [Cache Storage](https://developers.google.com/web/fundamentals/instant-and-offline/web-storage/cache-api) are not deducted againt size limits.
@@ -272,7 +274,7 @@ The same is true with performance.
 
 Today's browsers tacitly condone terrible performance, however we're starting from an even worse position; no browser today has a reliable signal against which to let users know that a site is fast (let alone slow). NSM provides such a signal in much the same way that the introduction of SSL/TLS in browsers created the opportunity to badge some sites as secure. In the short-run this will let browsers show users that certain sites are opting into delivering a good experience. In the long run, this enables the same default flip. At some date in the far distant future, perhaps only sites that _don't_ opt in will receive "slow site" warning UI.
 
-> TODO(slightlyoff): graphics illustrating possible visual treatement
+![Potential slow-site warning UI](images/NSM_warning_2x.png)
 
 Content discovery engines also eventually preferred TLS-encrypted sites, and could do the same for NSM versions of content, badging UI in a similar way to help guide users toward sites that are known to be fast. Importantly, NSM decouples the question of speed from any specific technology. Any tool, framework, or approach can be used so long as limits are not violated.
 
