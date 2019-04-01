@@ -7,7 +7,7 @@
 
 ## What’s all this then?
 
-Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could providing UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed).
+Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could provide UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed).
 
 
 ![Potential NSM-opt-in UI](images/NSM_compliant_2x.png)
