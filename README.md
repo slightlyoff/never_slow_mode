@@ -7,7 +7,7 @@
 
 ## What’s all this then?
 
-Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could providing UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed).
+Never-Slow Mode ("NSM") is a mode that sites can opt-into via HTTP header. For these sites, the browser imposes per-interaction resource limits, giving users a better user experience, potentially at the cost of extra developer work. We believe users are happier and more engaged on fast sites, and NSM attempts to make it easier for sites to guarantee speed to users. In addition to user experience benefits, sites might want to opt in because browsers could provide UI to users to indicate they are in "fast mode" (a TLS lock icon but for speed).
 
 
 ![Potential NSM-opt-in UI](images/NSM_compliant_2x.png)
@@ -47,7 +47,7 @@ Feature-Policy: allow-slow 'none'; geolocation 'none'
 
 This policy disables geolocation for the document and turns on NSM for the document _and all descendant `<iframe>`s that also opt-in_. `<iframe>`s that do not also opt-in are not loaded.
 
-> Note: the security implications of policy application to content which does not itself opt-in are discussed in detail later but the TL;DR is that NSM differs from other Feature Policies in that this respect and that limits are set _per document_.
+> Note: the security implications of policy application to content which does not itself opt-in are discussed in detail later but the TL;DR is that NSM differs from other Feature Policies in  this respect and that limits are set _per document_.
 
 Policy violations can be automatically logged to an endpoint by adding the approprite Reporting API header:
 
@@ -83,7 +83,7 @@ The following changes are made to default Web Platform behavior to ensure that N
 
 ### Per-interaction Resource Limits
 
-NSM sets the following limits _per-interaction_. Each navigation is considered an interaction, as are subsequent taps and scroll gestures. This ensures that NSM does not incidentially favour multi-page sites over Ajax-based interaction. We derive this from the insight that "plain HTML" GMail and "regular" (Ajax) GMail do the same semantic things, only in different ways. A uniform accounting method enables developers to decide which mechanism works best for their application.
+NSM sets the following limits _per-interaction_. Each navigation is considered an interaction, as are subsequent taps and scroll gestures. This ensures that NSM does not incidentally favor multi-page sites over Ajax-based interaction. We derive this from the insight that "plain HTML" GMail and "regular" (Ajax) GMail do the same semantic things, only in different ways. A uniform accounting method enables developers to decide which mechanism works best for their application.
 
 To enforce size limits in the face of resources served without valid `Content-Length` headers, NSM buffers budgeted resources which do not declare their length. Hopefully this provides developers with an incentive to include `Content-Length` headers on critical responses.
 
@@ -162,7 +162,7 @@ _Rationale_: poorly-constructed documents frequently spend large amounts of time
 
 #### `<iframe>`s
 
-NSM places a global (per tab) limit the total number of `<iframe>`s (at any depth) to *10* and limit `<iframe>` depth to *2*.
+NSM places a global (per tab) limit on the total number of `<iframe>`s (at any depth) of *10* and limits `<iframe>` depth to *2*.
 
 Each `<iframe>` document has it's own budget allocation for all of the following resource limits so. That means a document with a single `<iframe>` can _globally_ load double the amount of script, CSS, fonts, etc. Each document, however, continues to be limited by the budgets noted below.
 
@@ -324,7 +324,7 @@ Global limits create situations in which a malicious parent can attack unwitting
 
 The only limits which are global in NSM are restrictions on the total number of `<iframes>` and their depth. All other policies are budgeted _per document_. That is, if a parent document contains two `<iframe>`s, the total amount of compressed script allowed to be loaded over the wire is 1.5 MiB, rather than 500 KiB, as each document is allowed a maximum of 500 KiB.
 
-The `<iframe>` depth and count limits expose a new bit of information to doucments: the total number of sibling frames. The depth in the tree of a document *would* be exposed if the cap on depth were greater than 2.
+The `<iframe>` depth and count limits expose a new bit of information to documents: the total number of sibling frames. The depth in the tree of a document *would* be exposed if the cap on depth were greater than 2.
 
 It is TBD as to the reasonableless of these limits and if they create new hazards.
 
@@ -333,11 +333,11 @@ It is TBD as to the reasonableless of these limits and if they create new hazard
 To prevent inadvertant creation of side-channels and violated content expectations, NSM requires sub-documents also opts-in, else they do not load. This is similar to [`X-Frame-Options`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options), but with the default flipped to `deny`. This has several implications.
 
   * Correspondence between Feature Policy headers and [`<iframe allow>` attributes](https://developers.google.com/web/updates/2018/06/feature-policy#iframe) is not respected. Parent documents which set `slow-mode 'none'` implicitly require that all sub-documents do the same. Those that do not are not loaded.
-  * Child frames that opt in _do_ have limits enforced, except for `<iframe>` count and depth limit cannot be global without top-level-document opt-in.
+  * Child frames that opt in _do_ have limits enforced, except for `<iframe>` count and depth limit which cannot be global without top-level-document opt-in.
 
 ### Side Channels &amp; CORS
 
-A concern with size budgets is the potential of malicious third parties to strategically exhaust budgets to learn things they should not know about the state of the document. NSM avoids this issue for resources loaded in other frames by enforcing budgets on a per-document basis. This leaves concerns about resources directly included by potentially mischevious document or in the presence of mischevious third party resources. This concern arises for reosurces which themselves have not opted into sharing their content with the document, but are composed into it. Primary examples include the content and metadata of cross-origin images, styles, and scripts.
+A concern with size budgets is the potential of malicious third parties to strategically exhaust budgets to learn things they should not know about the state of the document. NSM avoids this issue for resources loaded in other frames by enforcing budgets on a per-document basis. This leaves concerns about resources directly included by potentially mischevious document or in the presence of mischevious third party resources. This concern arises for resources which themselves have not opted into sharing their content with the document, but are composed into it. Primary examples include the content and metadata of cross-origin images, styles, and scripts.
 
 The Web Platform's [Cross-Origin Resource Sharing ("CORS")](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) mechanism is highly complex in practice due to the need to continue to support this pre-CORS content and the inability of browsers to reliably know which reachable servers are private or public.
 
@@ -403,17 +403,17 @@ Several things recommend this approach:
   * Provides a way to isolate poorly behaving third parties
   * Prevents NSM's syntax from being an "oddball" within the Feature Policy grammar
 
-This would open sevearl questions regarding iframe policy application, but in general, may be the right way forward.
+This would open several questions regarding iframe policy application, but in general, may be the right way forward.
 
 ### Fully-described Layering
 
 This hardly needs saying given the authors of this proposal, but it's a clear aspiration to desribe all of the policies enforced by NSM in terms of well-layered APIs. In particular, the `allow-slow 'none'` policy should desugar well to a set of other Feature Policies.
 
-The goal of NSM isn't to create a brand new, stand-alone set of policies, but rather to wrap-up existing (or to-be-developed) policies into a binary opt-in. To the extent that NSM implements policies that FP doesn't provide yet, our goal is to re-introduce them to FP directly (although this does not block NSM progress).
+The goal of NSM isn't to create a brand new, stand-alone set of policies, but rather to wrap-up existing (or to-be-developed) policies into a binary opt-in. To the extent that NSM implements policies that FP don't provide yet, our goal is to re-introduce them to FP directly (although this does not block NSM progress).
 
 ### Long-Task Limit Scaling and Application Approaches
 
-A long-task limit of 200ms may be difficult to build to reliably from the perspective of a fast developer device. May developers are unfamiliar with the performance [diversity](https://deviceatlas.com/blog/android-v-ios-market-share) of today's market where _most_ global device shipments of all computers are Android devices, all of which are slower than either competing iOS devices and laptops. 200ms of single-core-bound JS exec on a fast dekstop Intel chip may [equate to more than 2s of time on an entry-level Android device](https://browser.geekbench.com/v4/cpu/compare/12148003?baseline=12170855) or [a top-of-the-line smartphone](https://browser.geekbench.com/v4/cpu/compare/12170440?baseline=12148003).
+A long-task limit of 200ms may be difficult to build to reliably from the perspective of a fast developer device. Many developers are unfamiliar with the performance [diversity](https://deviceatlas.com/blog/android-v-ios-market-share) of today's market where _most_ global device shipments of all computers are Android devices, all of which are slower than competing iOS devices and laptops. 200ms of single-core-bound JS exec on a fast dekstop Intel chip may [equate to more than 2s of time on an entry-level Android device](https://browser.geekbench.com/v4/cpu/compare/12148003?baseline=12170855) or [a top-of-the-line smartphone](https://browser.geekbench.com/v4/cpu/compare/12170440?baseline=12148003).
 
 Should long-task limits, therefore, be lower on faster CPUs? How should that scaling be calculated? Should the be linear or should devices be put into fewer, broader buckets?
 
@@ -427,9 +427,9 @@ More research is needed.
 
 ### Evidence for Limits
 
-While the proposed limits have been taken from extensive experience with real-world sites on a diversity of hardware, the plural of annecdote is not data. It is an open research question to ground the proposed limits in HCI perceptural limits and grounding for which devices and network are actually at the P90 mark. E.g., if P90 for networks is 2G (rather than the suspected 3G), perhaps the limits should be set lower.
+While the proposed limits have been taken from extensive experience with real-world sites on a diversity of hardware, the plural of anecdote is not data. It is an open research question to ground the proposed limits in HCI perceptural limits and grounding for which devices and network are actually at the P90 mark. E.g., if P90 for networks is 2G (rather than the suspected 3G), perhaps the limits should be set lower.
 
-Similarly, if the result of ongoing RUM studies into [First Input Delay](https://developers.google.com/web/updates/2018/05/first-input-delay) indicate (as is likely) that many long tasks do not block interaction &emdash; perhaps because input is gated on not-yet-generated UI, or because input is attempted late in the task, or because developers [get creative](https://philipwalton.com/articles/idle-until-urgent/) &emdash; the limit for long tasks proposed here may be far too low.
+Similarly, if the result of ongoing RUM studies into [First Input Delay](https://developers.google.com/web/updates/2018/05/first-input-delay) indicate (as is likely) that many long tasks do not block interaction &mdash; perhaps because input is gated on not-yet-generated UI, or because input is attempted late in the task, or because developers [get creative](https://philipwalton.com/articles/idle-until-urgent/) &mdash; the limit for long tasks proposed here may be far too low.
 
 ### Worker Limits
 
@@ -449,13 +449,13 @@ On limited devices (e.g., the emerging class of "smart feature phones"), the exi
 
 Similarly, content discovery engines and large sites may want to place limits on their _outbound_ links. Presumably they can validate the extent to which destination URLs work (or don't) with NSM applied.
 
-Both of these options represent a form of _external opt-in_. Instead of web developers applying NSM to their own content, users could experience arbitrary sites with the proposed policies applied unilatterally. This could be done with extension to links e.g.:
+Both of these options represent a form of _external opt-in_. Instead of web developers applying NSM to their own content, users could experience arbitrary sites with the proposed policies applied unilaterally. This could be done with extension to links e.g.:
 
 ```html
 <a href="https://example.com" rel="neverslow">Example</a>
 ```
 
-Such a `rel` type could allow browsers to decorate links to NSM-enabled pages with iconography noting their speed, similar to iconography in a browser's URL bar for sites that opt-in to NSM. This is difficult to achieve today as browsers have only probalistic (at best) understanding of destination performance and, sans NSM, no way to guarantee good behavior on the part of both first and third parties.
+Such a `rel` type could allow browsers to decorate links to NSM-enabled pages with iconography noting their speed, similar to iconography in a browser's URL bar for sites that opt-in to NSM. This is difficult to achieve today as browsers have only probabilistic (at best) understanding of destination performance and, sans NSM, no way to guarantee good behavior on the part of both first and third parties.
 
 > Note: this mechanism for applying NSM to non-opt-in content is related to _top level_ navigations, rather than `<iframe>`s. This removes the potential for malicious parents attacking child frames to leak information, but likely requires more security analysis.
 
@@ -470,11 +470,11 @@ To make such a mode liveable for developers of sites loaded under NSM this way, 
 
 ### Global Size Budgets
 
-Setting global resource budgets for the entire frame tree was considered but was rejected for previously reasons concerning security and predictability.
+Setting global resource budgets for the entire frame tree was considered but was rejected for previous reasons concerning security and predictability.
 
 ### Linting
 
-Linters are valuable because they provide [directness of action](http://worrydream.com/#!/LearnableProgramming). Developers can see what constraints are violated within the edit-refresh cycle. This increases [predictability](https://www.robertsapolskyrocks.com/depression.html) which improves speed of iteration and reduction in learned helplessness. NSM seeks to provide these benefits, but with additional runtime gaurantees that improve predictability.
+Linters are valuable because they provide [directness of action](http://worrydream.com/#!/LearnableProgramming). Developers can see what constraints are violated within the edit-refresh cycle. This increases [predictability](https://www.robertsapolskyrocks.com/depression.html) which improves speed of iteration and reduces learned helplessness. NSM seeks to provide these benefits, but with additional runtime gaurantees that improve predictability.
 
 Approaches that did not enforce runtime limits were considered, and may be part of a developer's workflow in an NSM-compliant world, but were judged insufficient without runtime enforcement because:
 
@@ -509,4 +509,4 @@ Thanks also to colleagues working in NBU and Chrome's Data-Saver projects whose 
 
 Folks working in web performance have had a huge impact on the thinking behind the proposed policies. In no particular order, thanks to: [Shubie Panicker](https://github.com/spanicker), [Tim Dresser](https://twitter.com/tdresser), [Jake Archibald](https://jakearchibald.com/), [Bryan McQuade](https://twitter.com/bryanmcquade), [Yoav Weiss](https://blog.yoav.ws/), [Houssein Djirdeh](https://houssein.me/), [Addy Osmani](https://addyosmani.com/), [Dion Almaer](https://medium.com/@dalmaer), and [Kristofer Baxter](https://twitter.com/kristoferbaxter).
 
-Lastly, the example of [Malte Ubl](https://github.com/cramforce) and the [AMP team](https://github.com/orgs/ampproject/people) have helped underscore the need for development-time-applicable policies and linting, highliting the need for directness of action.
+Lastly, the example of [Malte Ubl](https://github.com/cramforce) and the [AMP team](https://github.com/orgs/ampproject/people) have helped underscore the need for development-time-applicable policies and linting, highlighting the need for directness of action.
